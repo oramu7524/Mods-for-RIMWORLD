@@ -1,0 +1,111 @@
+﻿サッとわかる　xpathとパッチのやり方チュートリアル
+Written by Nightinggale
+Translated by Oramu
+
+元記事
+https://ludeon.com/forums/index.php?topic=32785.0
+
+
+A17のアップデートに伴って新たにパッチという素晴らしい機能が使えるようになり、Modの互換性が上げられるようになったんだ。パッチはとても優秀なアイデアなんだけど、実はxpathというのが必要になるんだ。xpathなんて聞いたこともないって人も多いだろう。わかるよ。僕もそうだったから。
+
+https://gist.github.com/Zhentar/4a1b71cea45b9337f70b30a21d868782
+このジェンター氏のパッチングガイドは役に立つんだけど、xpathがどういうものでどう使うのかということは書いてなくていくつかの実用例があるだけなんだ。だから僕がもうすこし例を挙げてxpathを説明しようと思う。
+
+もしこれを読んでる君が僕と同様、xpathなんてまったく知らなかったのなら、そうだね、いいニュースがあるよ。xpathなんて実はめっちゃ簡単なんだ！
+画像やほかのフォルダのパスを記述するのと同じだと考えていいんだ。例を挙げてみよう。
+
+君の独自の銃に自作の画像を使いたいときはこんな風にするよね。
+
+code:
+<texPath>Weapons/Ranged/CustomGun</texPath>
+
+そう、これが画像パスの書き方だね。でもxpathならどうなるんだろう？
+
+たとえばピストルの準備時間を0.3から5.2に変えたいのだとしてみよう。このときパッチできるのなら、あんまりdefファイル自体を書き換えるのはしない方がいい。じゃあどうやったらいいんだろう？
+そうだね、ピストルの準備時間を変えたいんだったら、"PatchOperationReplace"クラスが使える。その名が示すとおり、何かを置換するのに使えるんだ。こんな風にね。
+
+code:
+<Patch>
+	<Operation Class="PatchOperationReplace">
+	    <xpath>/ThingDefs/ThingDef[defName = "Gun_Pistol"]/verbs/li/warmupTime</xpath>
+	    <value>
+                <WarmupTime>5.2</WarmupTime>
+	    </value>
+	</Operation>
+</Patch>
+（訳注：上記コードはA17のもの。B18では Gun_Pistol を Gun_Autopistol に読み替えるとわかりやすい）
+
+このコードは指定されたxpathにしたがって階層を下ってピストルの準備時間の記述を見つける。そしてセットされた記述に置き換えるんだ。（訳注：原文は set value となっており、コード中の<value>～</value>のことを指す）
+
+さて、具体的にxpathがどう働いているのか説明していこう。まずxmlの記述はすべてノード（訳注：要素と同義）とみなされる。
+<ThingDef> はノードだし、 <defName>、<warmupTime>、 <verbs>、 <description>もみなノードだ。xmlで目にするいろんなタグがすべてノードなんだ。そしてxpathがしているのはただノードの正確な順序のインプットだけなんだ。
+
+<xpath>の記述では  /ThingDefs から始まっているけどこの最初の "/" は何だろうって思うよね？　これはそのあとのノード名ですべてのルートノードを指定するんだ。ルートノードは銃の定義文の最初なわけだから、今回のxpathの最初の記述になるわけだ。
+
+次は /ThingDef だ。これで定義文のなかからつかみ取りたい部分を明確にするんだ。でも /ThingDef だけではおよそ見つかる限りのすべての <ThingDef> を捉えてしまう。だからその次の部分で範囲を狭めていくわけだ。
+
+/ThingDefs/ThingDef の代わりの表記法として //ThingDef とすることもできるっちゃできる、けど最適じゃないしパッチ処理が遅くなってしまう。ルートノードのみならずすべてのサブノード（訳注：下層ノード。原文は its children）も指定してしまうからね。
+
+/ThingDef の後ろには該当の定義名（訳注：defname）をくっつける。つまりこんな感じさ。
+/ThingDefs/ThingDef[defName="Gun_Pistol"]
+これで <ThingDef> タグが付いているノードを片っ端から検索しようとはせずに、"Gun_Pistol" の <defName> タグがついてるノードだけを見つけるようになるんだ。
+
+さて今まで適切な定義箇所を探すコードを説明してきたけど、これじゃあまだコードにはどこに warmupTime があるかわからないよね。だから xpath にさらにノードを付け加えるんだ。今回はこうだ。
+/ThingDefs/ThingDef[defName = "Gun_Pistol"]/verbs
+
+この / を入れることでピストルの定義文の"verbs" と名付けられたすべてのサブノードを探すことができる。
+
+ピストルの定義コードをみればわかるように <warmupTime> は実際には <verbs> の下にある。けど <li> タグの中に位置してるんだよね。僕らの書いたxpathにはそれがわからないからエラーになるか、 <verbs> タグを書き換えてしまって結局エラーになる。
+
+だから今度は "li" を付け加えて
+/ThingDefs/ThingDef[defName = "Gun_Pistol"]/verbs/li
+としてみよう。
+これで完成！と思うかもしれない。でもまだ正確な場所を指定できてないんだ。このままだと <li> タグを書き換えてまたエラーになる。
+
+そこでもう一歩踏み込んでこうしてみよう。
+/ThingDefs/ThingDef[defName = "Gun_Pistol"]/verbs/li/warmupTime
+これで僕らのコードは Gun_Pistol という名前の定義文を見つけて、そのサブノードの verbs と名づけられた箇所を探す。そうして verbs のサブノードの li を見つけて、そんでまた li のサブノードの "warmupTime" を見つけ出すわけだ。
+
+これでやっとピストルの準備時間を書き換えられる。
+
+だけどもし"li"が一つじゃなくてもっとあったらどうなんだろう。たとえば失血のhediff（訳注：健康状態変化の定義文。HEalthDIFFerence の略）だったら。
+そのときはこうしたらいい。
+
+code:
+<Patch>
+	<Operation Class="PatchOperationReplace">
+	   <xpath>/Defs/HediffDef[defName = "BloodLoss"]/stages/li[2]/capMods/li/offset</xpath>
+	   <value>
+               <offset>-0.15</offset>
+	   </value>
+	</Operation>
+</Patch>
+
+このコードは "BloodLoss" という名前の HediffDef を探し、stages というサブノードを見つける。stages には複数の <li> サブノードがあるからコードに2番目の <li> タグを見つけるように明示してやったんだ。そうして一旦２番目の <li> タグが見つかったらあとはピストルのときのようにパスを辿っていける。（訳注：カウントは0からではなく1から。要注意）
+
+もちろん一つのパッチで複数の操作を行うことができるよ。それに置換だけじゃなくてほかにもたくさんのパッチオペレーションがあるからね。もっと知りたければジェンター氏のガイドをチェックするといいよ。
+
+xpathの表記法についてもっと知りたければここを見るのをお勧めするよ。
+https://www.w3schools.com/xml/xpath_syntax.asp
+xpathを理解するのに役立つツールはこれ
+http://xmltoolbox.appspot.com/xpath_generator.html
+
+この投稿が悩んでる人の手助けになりますように。
+
+最適化について指摘してくれた Shinzy氏と kaptain_kavern氏に謝辞を申し上げます。そして最適化の正しいやり方を教えてくれた NoImageAvalible氏に謝辞を申し上げます。
+
+Nightinggale氏からメッセージ
+　どうぞ翻訳してください。私は来たるべきリリースへのアップデートに気を取られてばかりです。他の人がアップデートできるように必要ならwikiを参照したほうがいいでしょうね。出来あがったらリンクを教えてくれれば幸いです。
+　
+　私はModCheckのアップデートを半分ほど終えたところです。時間があれば完成させようとおもっていますがいつとは言えませんｗ　翻訳では ModCheck に言及してください。というのも結構強力なモディングオプションを加えてあるので。それに ModCheck を使えばスタートアップ時間を早くできるんです。ただし、ModCheck を使用してるModに限るんですけどね。ModCheck を探してみてください。
+　
+ModCheck
+Steam http://steamcommunity.com/sharedfiles/filedetails/?id=1195679775
+Forum https://ludeon.com/forums/index.php?topic=36534.0
+GitHub https://github.com/Nightinggale/ModCheck
+
+
+訳者
+　ざっくり言うと、xpathはxml文書のタグのネスト（入れ子）をフォルダツリーのような階層構造にとらえて、ファイルの場所を指定するように文書内の表記場所を指定するものです。
+　何行目の何文字目という指定ではなく階層構造で指定することで元ファイルの改変に柔軟に適応できるということらしいですね。
+　翻訳に許可をくださったNightinggale氏に心からの謝辞を申し上げます。Special thanks to Nightinggale.

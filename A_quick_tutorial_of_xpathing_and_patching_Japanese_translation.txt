@@ -1,6 +1,6 @@
 ﻿サッとわかる　xpathとパッチのやり方チュートリアル
-Written by Nightinggale
-Translated by Oramu
+Written by minimurgle
+Translated by oramu
 
 元記事
 https://ludeon.com/forums/index.php?topic=32785.0
@@ -94,18 +94,7 @@ http://xmltoolbox.appspot.com/xpath_generator.html
 
 最適化について指摘してくれた Shinzy氏と kaptain_kavern氏に謝辞を申し上げます。そして最適化の正しいやり方を教えてくれた NoImageAvalible氏に謝辞を申し上げます。
 
-Nightinggale氏からメッセージ
-　どうぞ翻訳してください。私は来たるべきリリースへのアップデートに気を取られてばかりです。他の人がアップデートできるように必要ならwikiを参照したほうがいいでしょうね。出来あがったらリンクを教えてくれれば幸いです。
-　
-　私はModCheckのアップデートを半分ほど終えたところです。時間があれば完成させようとおもっていますがいつとは言えませんｗ　翻訳では ModCheck に言及してください。というのも結構強力なモディングオプションを加えてあるので。それに ModCheck を使えばスタートアップ時間を早くできるんです。ただし、ModCheck を使用してるModに限るんですけどね。ModCheck を探してみてください。
-　
-ModCheck
-Steam http://steamcommunity.com/sharedfiles/filedetails/?id=1195679775
-Forum https://ludeon.com/forums/index.php?topic=36534.0
-GitHub https://github.com/Nightinggale/ModCheck
-
-
 訳者
 　ざっくり言うと、xpathはxml文書のタグのネスト（入れ子）をフォルダツリーのような階層構造にとらえて、ファイルの場所を指定するように文書内の表記場所を指定するものです。
 　何行目の何文字目という指定ではなく階層構造で指定することで元ファイルの改変に柔軟に適応できるということらしいですね。
-　翻訳に許可をくださったNightinggale氏に心からの謝辞を申し上げます。Special thanks to Nightinggale.
+
